@@ -7,16 +7,19 @@ import (
 	"os"
 )
 
-func GetBytes(file *os.File) (int64, error) {
-	fileInfo, err := file.Stat()
-	if err != nil {
-		return 0, err
-	}
+func getBytes(file *os.File) int {
+	file.Seek(0, io.SeekStart)
+	bytes := 0
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanBytes)
 
-	return fileInfo.Size(), nil
+	for scanner.Scan() {
+		bytes++
+	}
+	return bytes
 }
 
-func GetLines(file *os.File) int {
+func getLines(file *os.File) int {
 	file.Seek(0, io.SeekStart)
 	lines := 0
 	scanner := bufio.NewScanner(file)
@@ -28,7 +31,7 @@ func GetLines(file *os.File) int {
 	return lines
 }
 
-func GetWords(file *os.File) int {
+func getWords(file *os.File) int {
 	file.Seek(0, io.SeekStart)
 	words := 0
 	scanner := bufio.NewScanner(file)
@@ -41,7 +44,7 @@ func GetWords(file *os.File) int {
 	return words
 }
 
-func GetChars(file *os.File) int {
+func getChars(file *os.File) int {
 	file.Seek(0, io.SeekStart)
 	chars := 0
 	scanner := bufio.NewScanner(file)
@@ -53,9 +56,28 @@ func GetChars(file *os.File) int {
 	return chars
 }
 
-func DefaultOutput(file *os.File) {
-	bytesCount, _ := GetBytes(file)
-	wordsCount := GetWords(file)
-	linesCount := GetLines(file)
-	fmt.Printf("\t%d\t%d\t%d\t%s\n", linesCount, wordsCount, bytesCount, file.Name())
+func defaultOutput(file *os.File, filename string) {
+	linesCount := getLines(file)
+	bytesCount := getBytes(file)
+	wordsCount := getWords(file)
+	fmt.Printf("\t%d\t%d\t%d\t%s\n", linesCount, wordsCount, bytesCount, filename)
+}
+
+func Run(file *os.File, lines, chars, words, byteSize bool, filename string) {
+	var result int
+
+	if lines {
+		result = getLines(file)
+	} else if chars {
+		result = getChars(file)
+	} else if words {
+		result = getWords(file)
+	} else if byteSize {
+		result = getBytes(file)
+	} else {
+		defaultOutput(file, filename)
+		return
+	}
+
+	fmt.Println(result)
 }
