@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
@@ -8,55 +9,35 @@ import (
 )
 
 func main() {
-	var fileName string
-	var inputFlag string
+	lines := flag.Bool("l", false, "count lines")
+	words := flag.Bool("w", false, "count words")
+	byteSize := flag.Bool("c", false, "count bytes")
+	chars := flag.Bool("m", false, "count characters")
+	flag.Parse()
 
-	fmt.Println(os.Args)
-	fmt.Println(len(os.Args))
-	if len(os.Args) > 2 {
-		fmt.Println("condition true")
-		fileName = os.Args[2]
-		inputFlag = os.Args[1]
-	} else {
-		fmt.Println("condition false")
-		fileName = os.Args[1]
-	}
+	fileName := flag.Arg(0)
 
-	file, err := os.Open(fileName)
+	var (
+		file *os.File
+		err  error
+	)
 
-	if err != nil {
-		if os.IsNotExist(err) {
-			fmt.Printf("File %s doesn't exist", fileName)
-		} else {
-			fmt.Println(err)
+	if fileName == "" {
+		file = os.Stdin
+		fileName = file.Name()
+		// TODO: remove this conditional after fixing seek for stdin data.
+		if !(*lines || *words || *chars || *byteSize) {
+			fmt.Println("pass some flag for stdin data")
+			return
 		}
-		return
-	}
-
-	defer file.Close()
-
-	switch inputFlag {
-	case "-c":
-		byteSize, err := ccwc.GetBytes(file)
+	} else {
+		file, err = os.Open(fileName)
 		if err != nil {
 			fmt.Println(err)
-			break
+			return
 		}
-		fmt.Println(byteSize)
-	case "-l":
-		fmt.Println("Count lines")
-		lines := ccwc.GetLines(file)
-		fmt.Println(lines)
-	case "-w":
-		fmt.Println("count words")
-		words := ccwc.GetWords(file)
-		fmt.Println(words)
-	case "-m":
-		fmt.Println("count characters")
-		chars := ccwc.GetChars(file)
-		fmt.Println(chars)
-	default:
-		ccwc.DefaultOutput(file)
 	}
+	defer file.Close()
 
+	ccwc.Run(file, *lines, *chars, *words, *byteSize, fileName)
 }
